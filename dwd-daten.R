@@ -10,6 +10,7 @@ options(scipen = 999)
 
 library(readr)
 library(dplyr)
+library(zoo)
 library(ggplot2)
 
 wd <- "~/Documents/github/dwd"
@@ -82,10 +83,26 @@ if(file.exists("dwd.Rdata")){
 }
 
 
+## analysis starts here
 
+nrw <- dta %>% 
+  select(Jahr, Monat, Deutschland) %>% 
+  filter(Monat == 3) %>% 
+  mutate(
+    nrw = as.numeric(Deutschland),
+    # temp.lag1 = lag(nrw),
+    # test = (nrw+temp.lag1)/2,
+    avg.10.years = rollmeanr(x = nrw,
+                          k = 10,
+                          fill = NA
+    ),
+    check = nrw >= avg.10.years
+)
 
-
-
+nrw %>% ggplot()+
+  geom_line(aes(x=Jahr, y=nrw))+
+  geom_line(aes(x=Jahr, y=avg.10.years))
+  
 
 
 
