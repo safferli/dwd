@@ -8,7 +8,6 @@ rm(list = ls()); gc(); gc()
 options(bitmapType='cairo')
 options(scipen = 999)
 
-library(readr)
 library(dplyr)
 library(zoo)
 library(ggplot2)
@@ -27,6 +26,10 @@ setwd(wd)
 
 ## function to pull DWD data on German regional average temperatures
 f.get.dwd.data <- function() {
+  
+  # load libraries needed in function
+  library(readr)
+  library(tidyr)
   
   # generate empty list to fill with data in the loop
   raw.dta <- vector("list", length = 12)
@@ -68,7 +71,11 @@ f.get.dwd.data <- function() {
   
   # bind all into one data frame
   dta <- bind_rows(raw.dta) %>% 
-    arrange(Jahr, Monat)
+    # clean data set
+    gather(region, temperature, -Jahr, -Monat) %>% 
+    # rename year and month to English
+    select(year = Jahr, month = Monat, everything()) %>% 
+    arrange(region, year, month)
   
   return(dta)
 }
@@ -104,6 +111,9 @@ nrw %>% ggplot(aes(x=Jahr, y=nrw))+
   geom_line(aes(group = Monat, color = nrw > avg.10.years))+
   geom_line(aes(x=Jahr, y=avg.10.years))
   
+
+
+
 
 
 
