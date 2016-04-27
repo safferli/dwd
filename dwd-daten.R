@@ -61,7 +61,7 @@ f.get.dwd.data <- function() {
     
     # add data to list
     # do NOT use readr, since this somehow completely messes up the data
-    raw.dta[[i]] <- read.csv2(text = txt.dta, stringsAsFactors = FALSE) %>% 
+    raw.dta[[i]] <- read.csv2(text = txt.dta, stringsAsFactors = FALSE, dec = ".") %>% 
       # last row is fubar'ed, remove
       select(-X)
   }
@@ -86,10 +86,10 @@ if(file.exists("dwd.Rdata")){
 ## analysis starts here
 
 nrw <- dta %>% 
-  select(Jahr, Monat, Deutschland) %>% 
+  select(Jahr, Monat, Nordrhein.Westfalen) %>% 
   filter(Monat == 3) %>% 
   mutate(
-    nrw = as.numeric(Deutschland),
+    nrw = Nordrhein.Westfalen,
     # temp.lag1 = lag(nrw),
     # test = (nrw+temp.lag1)/2,
     avg.10.years = rollmeanr(x = nrw,
@@ -103,11 +103,6 @@ nrw %>% ggplot()+
   geom_line(aes(x=Jahr, y=nrw))+
   geom_line(aes(x=Jahr, y=avg.10.years))
   
-
-
-
-
-
 
 
 
