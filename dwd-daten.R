@@ -99,8 +99,9 @@ nrw <- dta %>%
     check = nrw >= avg.10.years
 )
 
-nrw %>% ggplot()+
-  geom_line(aes(x=Jahr, y=nrw))+
+# http://stackoverflow.com/questions/9543402/how-to-obtain-multiple-colours-for-geom-line-conditional-on-a-specific-value
+nrw %>% ggplot(aes(x=Jahr, y=nrw))+
+  geom_line(aes(group = Monat, color = nrw > avg.10.years))+
   geom_line(aes(x=Jahr, y=avg.10.years))
   
 
