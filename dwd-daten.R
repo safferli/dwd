@@ -155,7 +155,7 @@ new.hr <- data.frame(
 
 
 ggplot()+
-  geom_line(data = new.hr, aes(x=year, y=temperature, group = region, color = temperature > 4))+
+  geom_line(data = new.hr, aes(x=year, y=temperature, group = region, color = temperature > 4.1))+
   geom_line(data = nrw, aes(x=year, y=avg.10.years))
 
 
