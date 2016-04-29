@@ -102,7 +102,6 @@ nrw <- dta %>%
     check = temperature >= avg.10.years
   )
 
-# http://stackoverflow.com/questions/9543402/how-to-obtain-multiple-colours-for-geom-line-conditional-on-a-specific-value
 nrw %>% ggplot(aes(x=year, y=temperature))+
   geom_line(aes(group = region, color = temperature > avg.10.years))+
   geom_line(aes(x=year, y=avg.10.years))
@@ -110,55 +109,7 @@ nrw %>% ggplot(aes(x=year, y=temperature))+
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-id<-rep(c(1,2,3),each=3)
-y<-rnorm(9,2,1)
-x<-rep(c(1,2,3),3)
-stackOne<-data.frame(cbind(id,y,x))  
-
-threshold <- 2.2 # set colour-transition threshold
-yres <- 0.01 # y-resolution (accuracy of colour change location)
-
-d <- stackOne # for code simplification
-# new cols for point coordinates of line end
-d$y2 <- c(d$y[-1], NA)
-d$x2 <- c(d$x[-1], NA) 
-d <- d[-findInterval(unique(d$id), d$id), ] # remove last row for each group
-
-# new high-resolution y coordinates between each pair within each group
-y.new <- apply(d, 1, function(x) {
-  seq(x['y'], x['y2'], yres*sign(x['y2'] - x['y']))
-})
-
-d$len <- sapply(y.new, length) # length of each series of points
-# new high-resolution x coordinates corresponding with new y-coords
-x.new <- apply(d, 1, function(x) {
-  seq(x['x'], x['x2'], length.out=x['len'])
-})
-
-id <- rep(seq_along(y.new), d$len) # new group id vector
-
-y.new <- unlist(y.new)
-x.new <- unlist(x.new)
-d.new <- data.frame(id=id, x=x.new, y=y.new)
-
-p <- ggplot(d.new, aes(x=x,y=y)) +
-  geom_line(aes(group=d.new$id, color=d.new$y < threshold))+
-  geom_point(data=stackOne)+
-  scale_color_discrete(sprintf('Below %s', threshold))
-p
+# http://stackoverflow.com/questions/9543402/how-to-obtain-multiple-colours-for-geom-line-conditional-on-a-specific-value
 
 
 
@@ -177,12 +128,7 @@ tt %<>%
   ) %>% 
   # remove last row from group
   filter(!row_number() == n()) %>% 
-
-
-
-
-
-tt2 <- tt %>% 
+  # get high-resolution versions of the inter-point data
   rowwise() %>% 
   mutate(
     y.hr = list(seq(y, y2, yres*sign(y2-y))),
@@ -192,18 +138,24 @@ tt2 <- tt %>%
 
 
 new.hr <- data.frame(
-  x = unlist(tt2$x.hr), 
-  y = unlist(tt2$y.hr)
+  year = unlist(tt$x.hr), 
+  temperature = unlist(tt$y.hr), 
+  region = tt$region[1]
 )
 
-new.hr <- tt2 %>% 
-  group_by(region) %>% 
-  summarise(
-    x = unlist(x.hr), 
-    y = unlist(y.hr)
-  )
 
 
 
+# new.hr <- tt %>% 
+#   group_by(region) %>% 
+#   summarise(
+#     x = unlist(x.hr), 
+#     y = unlist(y.hr)
+#   )
+
+
+ggplot()+
+  geom_line(data = new.hr, aes(x=year, y=temperature, group = region, color = temperature > 4))+
+  geom_line(data = nrw, aes(x=year, y=avg.10.years))
 
 
