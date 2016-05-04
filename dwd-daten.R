@@ -105,7 +105,7 @@ nrw <- dta %>%
 nrw %>% ggplot(aes(x=year, y=temperature))+
   geom_line(aes(group = region, color = temperature > avg.10.years))+
   geom_line(aes(x=year, y=avg.10.years))
-
+ggsave(file="temp-mess.png", width = 30, height = 30/((1+sqrt(5))/2), units = "cm")
 
 
 
@@ -122,17 +122,24 @@ tt %<>%
   # rename to use in function later
   x = year,
   y = temperature,
+  z = avg.10.years, 
   # generate point coordinates for line end
   x2 = lead(x),
-  y2 = lead(y)
+  y2 = lead(y),
+  z2 = lead(z)
   ) %>% 
   # remove last row from group
   filter(!row_number() == n()) %>% 
+  # remove years in which z is NA
+  # (chokes the summarising later)
+  filter(!x %in% .$x[is.na(z)]) %>% 
   # get high-resolution versions of the inter-point data
   rowwise() %>% 
   mutate(
     y.hr = list(seq(y, y2, yres*sign(y2-y))),
-    x.hr = list(seq(x, x2, length.out = length(y.hr)))
+    x.hr = list(seq(x, x2, length.out = length(y.hr))),
+    #z.hr = list(seq(z, z2, yres*sign(z2-z)))
+    z.hr = list(seq(z, z2, length.out = length(y.hr)))
   )
 
 
@@ -140,8 +147,17 @@ tt %<>%
 new.hr <- data.frame(
   year = unlist(tt$x.hr), 
   temperature = unlist(tt$y.hr), 
+  avg.10.year.temperature = unlist(tt$z.hr),
   region = tt$region[1]
 )
+
+
+length(unlist(tt$x.hr))
+length(unlist(tt$y.hr))
+length(unlist(tt$z.hr))
+
+
+
 
 # yuki's version
 # #new data for testing
@@ -182,7 +198,15 @@ new.hr <- data.frame(
 
 
 ggplot()+
-  geom_line(data = new.hr, aes(x=year, y=temperature, group = region, color = temperature > 4.1))+
-  geom_line(data = nrw, aes(x=year, y=avg.10.years))
-
+  geom_line(data = new.hr, aes(x=year, y=temperature, group = region, color = temperature > avg.10.year.temperature))+
+  geom_line(data = new.hr, aes(x=year, y=avg.10.year.temperature, color = "10y rolling avg"))+
+  #guide_legend("temperature > \n 10-year rolling average")+
+  guides(
+    colour = guide_legend("temperature is larger than \n10-year rolling avg")
+    )+
+  # change line colour -- black for the line, red if above, green if below
+  scale_color_manual(values=c("#000000", "#C44B4B", "#A5CF35"))+
+  labs(title = "March temperatures in North Rhine-Westphalia",
+      x = "", y = "temperature (March monthly average)")
+#ggsave(file="temperature.png", width = 30, height = 30/((1+sqrt(5))/2), units = "cm")
 
