@@ -205,7 +205,7 @@ ggplot()+
     colour = guide_legend("temperature is larger than \n10-year rolling avg")
     )+
   # change line colour -- black for the line, red if above, green if below
-  scale_color_manual(values=c("#000000", "#C44B4B", "#A5CF35"))+
+  scale_color_manual(values=c("#000000", "#A5CF35", "#C44B4B"))+
   labs(title = "March temperatures in North Rhine-Westphalia",
       x = "", y = "temperature (March monthly average)")
 #ggsave(file="temperature.png", width = 30, height = 30/((1+sqrt(5))/2), units = "cm")
