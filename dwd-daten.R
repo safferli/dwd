@@ -120,13 +120,13 @@ yres <- 0.01
 tt %<>% 
   mutate(
   # rename to use in function later
-  x = year,
-  y = temperature,
-  z = avg.10.years, 
-  # generate point coordinates for line end
-  x2 = lead(x),
-  y2 = lead(y),
-  z2 = lead(z)
+    x = year,
+    y = temperature,
+    z = avg.10.years, 
+    # generate point coordinates for line end
+    x2 = lead(x),
+    y2 = lead(y),
+    z2 = lead(z)
   ) %>% 
   # remove last row from group
   filter(!row_number() == n()) %>% 
@@ -135,78 +135,83 @@ tt %<>%
   filter(!x %in% .$x[is.na(z)]) %>% 
   # get high-resolution versions of the inter-point data
   rowwise() %>% 
-  mutate(
-    y.hr = list(seq(y, y2, yres*sign(y2-y))),
-    x.hr = list(seq(x, x2, length.out = length(y.hr))),
-    #z.hr = list(seq(z, z2, yres*sign(z2-z)))
-    z.hr = list(seq(z, z2, length.out = length(y.hr)))
+  ## old version, use for options below to unnest()/unlist() data: 
+  # mutate(
+  #   y.hr = list(seq(y, y2, yres*sign(y2-y))),
+  #   x.hr = list(seq(x, x2, length.out = length(y.hr))),
+  #   z.hr = list(seq(z, z2, length.out = length(y.hr)))
+  # )
+  do(
+    # for each row, generate dataframe with the low-res data,
+    # which gets automatically filled up to the high-res data rows
+    data.frame(
+      year = .$year,
+      month = .$month,
+      region = .$region,
+      temperature = .$temperature,
+      x = .$x,
+      x2 = .$x2,
+      # make a sequence (linear line) of the interpoint data
+      # we will use this data length as "basis" for x.hr and z.hr, below
+      y.hr = seq(.$y, .$y2 ,yres*sign(.$y2-.$y)),
+      avg.10.years = .$z,
+      z2 = .$z2
+    ) %>% 
+      mutate(
+        # make a sequence (linear line) of the remaining interpoint data
+        # take the rownumber of data needed from y.hr, above
+        x.hr = seq(min(x), min(x2), length.out = nrow(.)),
+        z.hr = seq(min(z), min(z2), length.out = nrow(.))
+      )
   )
 
-
-
-new.hr <- data.frame(
-  year = unlist(tt$x.hr), 
-  temperature = unlist(tt$y.hr), 
-  avg.10.year.temperature = unlist(tt$z.hr),
-  region = tt$region[1]
-)
-
-
-length(unlist(tt$x.hr))
-length(unlist(tt$y.hr))
-length(unlist(tt$z.hr))
-
-
-
-
-# yuki's version
-# #new data for testing
-# tt <- nrw
-# yres <- 0.01
-# 
-# 
-# tt %<>% 
-#   mutate(
-#     # rename to use in function later
-#     x = year,
-#     y = temperature,
-#     # generate point coordinates for line end
-#     x2 = lead(x),
-#     y2 = lead(y)
-#   ) %>% 
-#   # remove last row from group
-#   filter(!row_number() == n()) %>% 
-#   # get high-resolution versions of the inter-point data
-#   rowwise() %>% 
-#   mutate(
-#     y.hr = list(seq(y, y2, yres*sign(y2-y))),
-#     x.hr = list(seq(x, x2, length.out = length(y.hr)))
-#   )  %>%
-#   filter(region == 'Nordrhein.Westfalen') %>%
-#   select(year = x.hr, temperature = y.hr) %>%
-#   unnest() %>%
-#   mutate(region='Nordrhein.Westfalen')
-
-
-
-# new.hr <- tt %>% 
-#   group_by(region) %>% 
-#   summarise(
-#     x = unlist(x.hr), 
-#     y = unlist(y.hr)
-#   )
-
-
+## plot everything! 
 ggplot()+
-  geom_line(data = new.hr, aes(x=year, y=temperature, group = region, color = temperature > avg.10.year.temperature))+
-  geom_line(data = new.hr, aes(x=year, y=avg.10.year.temperature, color = "10y rolling avg"))+
-  #guide_legend("temperature > \n 10-year rolling average")+
+  # high-res version of the temperature data
+  geom_line(data = tt, aes(x=x.hr, y=y.hr, group = region, color = y.hr > z.hr))+
+  # add rolling average as line
+  geom_line(data = tt, aes(x=year, y=avg.10.years, color = "10y rolling avg"))+
   guides(
     colour = guide_legend("temperature is larger than \n10-year rolling avg")
-    )+
-  # change line colour -- black for the line, red if above, green if below
+  )+
+  # change line colours -- black for the line, red if above, green if below
   scale_color_manual(values=c("#000000", "#A5CF35", "#C44B4B"))+
   labs(title = "March temperatures in North Rhine-Westphalia",
-      x = "", y = "temperature (March monthly average)")
-#ggsave(file="temperature.png", width = 30, height = 30/((1+sqrt(5))/2), units = "cm")
+       x = "", y = "temperature (March monthly average)")
+# save everything, using golden ratio
+ggsave(file="temperature.png", width = 30, height = 30/((1+sqrt(5))/2), units = "cm")
+
+
+
+
+## different ways to unnest the hr data:
+
+## unlist() into new dataframe (cannot do this in dplyr pipe); this is what the original stackoverflow answer did
+
+# new.hr <- data.frame(
+#   year = unlist(tt$x.hr), 
+#   temperature = unlist(tt$y.hr), 
+#   avg.10.year.temperature = unlist(tt$z.hr),
+#   region = tt$region[1]
+# )
+
+# # Yuki's version with unnest() (can do in dplyr pipe, but cannot do this in group_by())
+# tt2 <- tt %>% 
+#   #group_by(region) %>% 
+#   select(year = x.hr, temperature = y.hr, avg.10.years = z.hr) %>% 
+#   unnest()
+
+# # old plot version, with "new.hr" dataframe
+# ggplot()+
+#   geom_line(data = new.hr, aes(x=year, y=temperature, group = region, color = temperature > avg.10.year.temperature))+
+#   geom_line(data = new.hr, aes(x=year, y=avg.10.year.temperature, color = "10y rolling avg"))+
+#   #guide_legend("temperature > \n 10-year rolling average")+
+#   guides(
+#     colour = guide_legend("temperature is larger than \n10-year rolling avg")
+#     )+
+#   # change line colour -- black for the line, red if above, green if below
+#   scale_color_manual(values=c("#000000", "#A5CF35", "#C44B4B"))+
+#   labs(title = "March temperatures in North Rhine-Westphalia",
+#       x = "", y = "temperature (March monthly average)")
+# #ggsave(file="temperature.png", width = 30, height = 30/((1+sqrt(5))/2), units = "cm")
 
