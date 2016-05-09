@@ -115,11 +115,12 @@ ggsave(file="temp-mess.png", width = 30, height = 30/((1+sqrt(5))/2), units = "c
 
 #new data for testing
 tt <- nrw
+# resolution scale (0.01 = factor 100)
 yres <- 0.01
 
 tt %<>% 
   mutate(
-  # rename to use in function later
+    # rename to use in function later
     x = year,
     y = temperature,
     z = avg.10.years, 
@@ -153,7 +154,7 @@ tt %<>%
       x2 = .$x2,
       # make a sequence (linear line) of the interpoint data
       # we will use this data length as "basis" for x.hr and z.hr, below
-      y.hr = seq(.$y, .$y2 ,yres*sign(.$y2-.$y)),
+      y.hr = seq(.$y, .$y2, yres*sign(.$y2-.$y)),
       avg.10.years = .$z,
       z2 = .$z2
     ) %>% 
